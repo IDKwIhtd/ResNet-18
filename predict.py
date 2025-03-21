@@ -33,9 +33,13 @@ def unnormalize(img):
     return np.clip(img, 0, 1)  # 값 범위를 [0,1]로 제한
 
 
-# 데이터 가져오기
-images, labels = next(iter(testloader))
-images, labels = images.to(device), labels.to(device)
+# 테스트셋에서 무작위 이미지 5장 추출
+num_samples = 5
+indices = torch.randperm(len(testset))[:num_samples]
+
+# 선택된 인덱스로부터 이미지와 라벨 로드
+images = torch.stack([testset[i][0] for i in indices]).to(device)
+labels = torch.tensor([testset[i][1] for i in indices]).to(device)
 
 # 모델 예측
 with torch.no_grad():
@@ -43,18 +47,19 @@ with torch.no_grad():
     _, predicted = torch.max(outputs, 1)
 
 # 시각화
-fig, axes = plt.subplots(1, 5, figsize=(15, 3))
+fig, axes = plt.subplots(1, num_samples, figsize=(15, 3))
 classes = testset.classes
 
-for i in range(5):
-    img = images[i].cpu().numpy().transpose(1, 2, 0)  #  / 2 + 0.5 (C, H, W) → (H, W, C)
-    img = unnormalize(img)  # 정규화 해제
+for i in range(num_samples):
+    img = images[i].cpu().numpy().transpose(1, 2, 0)
+    img = unnormalize(img)
     axes[i].imshow(img)
     axes[i].set_title(f"GT: {classes[labels[i]]}\nPred: {classes[predicted[i]]}")
     axes[i].axis("off")
 
 plt.savefig("predictions.png")
 plt.show()
+
 
 # 전체 테스트셋 정확도 측정
 correct = 0
