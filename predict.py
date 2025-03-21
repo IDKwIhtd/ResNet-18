@@ -55,3 +55,18 @@ for i in range(5):
 
 plt.savefig("predictions.png")
 plt.show()
+
+# 전체 테스트셋 정확도 측정
+correct = 0
+total = 0
+
+with torch.no_grad():
+    for images, labels in testloader:
+        images, labels = images.to(device), labels.to(device)
+        outputs = model(images)
+        _, predicted = torch.max(outputs, 1)
+        total += labels.size(0)
+        correct += (predicted == labels).sum().item()
+
+accuracy = 100 * correct / total
+print(f"Test Accuracy: {accuracy:.2f}%")
