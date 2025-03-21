@@ -5,7 +5,7 @@ Apple Silicon(M1/M2/M3)의 MPS(GPU)와 CPU 환경에서 각각 학습을 진행�
 
 ---
 
-## 📂 프로젝트 구조
+## 📂 폴더 구조
 
 ```
 ResNet-18/
