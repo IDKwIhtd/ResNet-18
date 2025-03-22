@@ -76,7 +76,7 @@ ResNet-18/
 
 ---
 
-## ⚙️ 실행 방법
+## ⚙️ 실행 방법 (v2)
 
 ### 1. 환경 구성
 
@@ -134,7 +134,7 @@ python predict.py
 각 이미지 위에는 실제 정답(GT)과 모델의 예측(Pred)이 함께 표시됩니다.
 
 <p align="center">
-  <img src="predictions.png" alt="Prediction Results" width="90%">
+  <img src="predicts/predictions.png" alt="Prediction Results" width="90%">
 </p>
 
 ---
