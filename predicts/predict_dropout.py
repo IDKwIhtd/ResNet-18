@@ -1,9 +1,14 @@
+import sys
+import os
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 import torch
 import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
 import numpy as np
-from model import CustomResNet, Block  # 모델 불러오기
+from models.resnet18_dropout import CustomResNet, Block  # 모델 불러오기
 
 # device 설정 (MPS 사용 가능하면 MPS, 그렇지 않으면 CPU 사용)
 device = torch.device("mps" if torch.backends.mps.is_available() else "cpu")
@@ -11,7 +16,7 @@ print(f"Using device: {device}")
 
 # 모델 로드
 model = CustomResNet(Block, [2, 2, 2, 2], num_classes=10).to(device)
-model.load_state_dict(torch.load("resnet18.pth"))
+model.load_state_dict(torch.load("checkpoint.pth"))
 model.eval()
 
 # 데이터 변환
@@ -57,7 +62,7 @@ for i in range(num_samples):
     axes[i].set_title(f"GT: {classes[labels[i]]}\nPred: {classes[predicted[i]]}")
     axes[i].axis("off")
 
-plt.savefig("predictions.png")
+plt.savefig("predicts/predictions_dropout.png")
 plt.show()
 
 
