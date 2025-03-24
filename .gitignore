@@ -216,4 +216,5 @@ data/
 
 # 기타 대용량 파일
 *.npz
-*.npy
+*.npy*.pth
+*.pth
