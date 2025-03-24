@@ -55,7 +55,7 @@ class Block(nn.Module):
 
 # ResNet 모델 정의
 class CustomResNet(nn.Module):
-    def __init__(self, block, layers, num_classes=None):
+    def __init__(self, block, layers, num_classes=10):
         """
         Custom ResNet 모델
         - 첫 번째 컨볼루션 레이어와 배치 정규화 적용
@@ -127,14 +127,84 @@ class CustomResNet(nn.Module):
         x = self.layer2(x)
         x = self.layer3(x)
         x = self.layer4(x)
-        # 평균 풀링 및 텐서의 차원 축소
-        x = self.avgpool(x)
-        x = torch.flatten(x, 1)  # 1차원 벡터로 변환
+
+        # Transformer 입력 준비
+        B, C, H, W = x.shape
+        x = x.view(B, C, H * W).permute(0, 2, 1)  # (B, 16, 512)
+
+        # Transformer block 넣기
+        x = self.transformer(x)  # (B, 16, 512)
+
+        # Sequence 평균 → classification head로
+        x = x.mean(dim=1)  # (B, 512)
         x = self.dropout(x)  # 드롭아웃 적용
         # 최종 완전 연결 레이어를 통해 클래스별 예측값 출력
         x = self.fc(x)
         return x
 
 
+class SimpleTransformerBlock(nn.Module):
+    def __init__(self, dim=512, heads=8, ff_dim=2048, dropout=0.1):
+        super().__init__()
+        self.attn = nn.MultiheadAttention(
+            embed_dim=dim, num_heads=heads, dropout=dropout, batch_first=True
+        )
+        self.norm1 = nn.LayerNorm(dim)
+        self.ff = nn.Sequential(
+            nn.Linear(dim, ff_dim),
+            nn.ReLU(),
+            nn.Linear(ff_dim, dim),
+        )
+        self.norm2 = nn.LayerNorm(dim)
+
+    def forward(self, x):
+        attn_output, _ = self.attn(x, x, x)
+        x = self.norm1(x + attn_output)
+        ff_output = self.ff(x)
+        x = self.norm2(x + ff_output)
+        return x
+
+
+class CustomResNetWithTransformer(CustomResNet):
+    def __init__(self, block, layers, num_classes=10, dropout_prob=0.5):
+        super().__init__(block, layers, num_classes)
+        self.transformer = SimpleTransformerBlock(dim=512)
+        self.cls_head = nn.Sequential(nn.LayerNorm(512), nn.Linear(512, num_classes))
+        self.dropout = nn.Dropout(p=dropout_prob)
+
+    def forward(self, x):
+        x = F.relu(self.bn1(self.conv1(x)))
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+
+        # ResNet output: (B, 512, 4, 4)
+        B, C, H, W = x.shape
+        x = x.view(B, C, H * W).permute(0, 2, 1)  # (B, 16, 512)
+
+        x = self.transformer(x)  # → (B, 16, 512)
+        x = x.mean(dim=1)  # → (B, 512)
+        x = self.dropout(x)
+        x = self.cls_head(x)  # → (B, num_classes)
+
+        return x
+
+
 # ResNet-18 모델 생성 (각 레이어의 블록 수 : [2, 2, 2, 2])
 # model = CustomResNet(Block, [2, 2, 2, 2], num_classes=10)
+
+"""
+[Conv1 + BN + ReLU]
+→ layer1
+→ layer2
+→ layer3
+→ layer4  ← 여기까지 CNN (output shape: B x 512 x 4 x 4)
+
+→ reshape + permute → B x 16 x 512
+→ Transformer block
+→ mean(dim=1) → B x 512
+→ Dropout
+→ LayerNorm + FC
+→ 출력
+"""

@@ -36,16 +36,15 @@ def train():
 
     # 데이터셋 로드
     batch_size = 128
-    trainset = torchvision.datasets.CIFAR10(
+    trainset = torchvision.datasets.CIFAR100(
         root="./data", train=True, download=True, transform=transform_train
     )
     num_classes = len(trainset.classes)
-
     trainloader = torch.utils.data.DataLoader(
         trainset, batch_size=batch_size, shuffle=True, num_workers=2
     )
 
-    testset = torchvision.datasets.CIFAR10(
+    testset = torchvision.datasets.CIFAR100(
         root="./data", train=False, download=True, transform=transform_test
     )
     testloader = torch.utils.data.DataLoader(
@@ -53,14 +52,19 @@ def train():
     )
 
     # 모델 및 학습 설정
-    model = CustomResNet(Block, [2, 2, 2, 2], num_classes=10).to(device)
+    model = CustomResNet(Block, [2, 2, 2, 2], num_classes=num_classes).to(device)
     if os.path.exists("checkpoint.pth"):
-        model.load_state_dict(torch.load("checkpoint.pth"))
-        print("checkpoint.pth에서 이어서 학습 시작!")
+        state_dict = torch.load("checkpoint.pth")
+        state_dict.pop("fc.weight", None)
+        state_dict.pop("fc.bias", None)
+        model.load_state_dict(state_dict, strict=False)
+        print("CIFAR-10 모델에서 feature extractor만 가져옴")
 
     criterion = torch.nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
-    early_stopping = EarlyStopping(patience=5, verbose=True)
+    early_stopping = EarlyStopping(
+        patience=5, verbose=True, path="checkpoint._cifar100.pth"
+    )
 
     num_epochs = 10
     train_losses, train_accuracies, val_losses = [], [], []
@@ -109,7 +113,7 @@ def train():
             print("Early stopping")
             break
     # 가장 좋은 모델 불러오기
-    model.load_state_dict(torch.load("checkpoint.pth"))
+    model.load_state_dict(torch.load("checkpoint._cifar100.pth"))
 
     # 손실 및 정확도 그래프 저장
     plt.figure(figsize=(15, 5))
@@ -132,7 +136,7 @@ def train():
     plt.title("Validation Loss")
 
     plt.tight_layout()
-    plt.savefig("loss_accuracy_dropout.png")
+    plt.savefig("loss_accuracy_dropout_cifar100.png")
     plt.show()
 
 
