@@ -204,3 +204,16 @@ poetry.toml
 pyrightconfig.json
 
 data/
+
+# PyTorch model checkpoints
+*.pth
+*.pt
+*.ckpt
+*.bin
+
+# Jupyter notebook checkpoints
+.ipynb_checkpoints/
+
+# 기타 대용량 파일
+*.npz
+*.npy
