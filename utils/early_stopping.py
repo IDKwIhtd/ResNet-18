@@ -45,5 +45,5 @@ class EarlyStopping:
         """최고 성능 모델 저장"""
         if self.verbose:
             print(f"Validation loss improved. Saving model to {self.path}")
-        torch.save(model.state_dict(), self.path)
+        torch.save(model.state_dict(), self.path),
         self.val_loss_min = val_loss
